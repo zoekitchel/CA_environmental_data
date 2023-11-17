@@ -321,7 +321,7 @@ The process used to create the 5 meter DEMs is:
     rectangle
   - Blank out land areas
   - Clip to extent of the zone polygon
-
+ 
 After the original tiled 25 meter base DEMs were created
 by Teale, shaded reliefs were generated and visually 
 inspected.  Miscoded points that resulted in spurious pits
