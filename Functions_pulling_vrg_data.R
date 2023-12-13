@@ -1,7 +1,8 @@
 #note, you can only have one true at a time (only return one file)
 #note, that all archived files MUST be in 'Old Versions' file for the following code to work
 
-pull_VRG_data_files <- function(newest = T, #do you want newest version of data file (T) or list of all options (F)
+pull_VRG_data_files <- function(dropbox_path = NA, #you could manually set dropbox path if this isn't working
+                                newest = T, #do you want newest version of data file (T) or list of all options (F)
                                 event = F, #do you want raw event data?
                                 fish = F, #do you want raw fish observation data?
                                 swath = F, #do you want raw swath data?
@@ -11,16 +12,19 @@ pull_VRG_data_files <- function(newest = T, #do you want newest version of data 
                                 all_sites = F, #do you want all sites table?
                                 all_fish = F, #do you want all fish table?
                                 benthic_reef_spp = F #do you want benthic reef species table?
-){
-  
-  #identify dropbox path
-  dropbox_path <- here("Dropbox")
-  
-  #VRG Files
-  VRG_files <- "VRG Files"
-  
-  #full path name
-  VRG_files_full_path <- file.path(dropbox_path, VRG_files)
+                                                      ){
+  if(is.na(dropbox_path)){
+    dropbox_path <- file.path(path.expand("~"),"Dropbox")
+    
+    #does this folder exist?
+    if(!dir.exists(dropbox_path)){
+      stop("The default script is not able to locate Dropbox on your computer. Please enter path manually in function argument dropbox_path = ")
+      }
+    }
+    VRG_files <- "VRG Files"
+
+    #full path name
+    VRG_files_full_path <- file.path(dropbox_path, VRG_files)
   
   
   
