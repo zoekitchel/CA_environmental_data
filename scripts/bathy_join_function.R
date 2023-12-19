@@ -32,7 +32,12 @@ add_depth_columns <- function(lat_lon, ETOPO = F, CDFW = F, USGS_socal=F, dist_2
   
   lat_lon_only <- data.table(lat_lon)
   
-  lat_lon_only <- unique(lat_lon_only[,.(Longitude, Latitude)])
+  if(any(is.na(lat_lon_only))) {
+      warning("Input contains NA values. Those rows will be deleted from output.")
+    }
+  }
+  
+  lat_lon_only <- na.omit(unique(lat_lon_only[,.(Longitude, Latitude)]))
   
   if(ETOPO == T){
 
