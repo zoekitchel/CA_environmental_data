@@ -1,8 +1,7 @@
 #note, you can only have one true at a time (only return one file)
 #note, that all archived files MUST be in 'Old Versions' file for the following code to work
 
-pull_VRG_data_files <- function(dropbox_path = NA, #you could manually set dropbox path if this isn't working
-                                newest = T, #do you want newest version of data file (T) or list of all options (F)
+pull_VRG_data_files <- function(newest = T, #do you want newest version of data file (T) or list of all options (F)
                                 event = F, #do you want raw event data?
                                 fish = F, #do you want raw fish observation data?
                                 swath = F, #do you want raw swath data?
@@ -13,19 +12,20 @@ pull_VRG_data_files <- function(dropbox_path = NA, #you could manually set dropb
                                 all_fish = F, #do you want all fish table?
                                 benthic_reef_spp = F #do you want benthic reef species table?
                                                       ){
-  if(is.na(dropbox_path)){
-    dropbox_path <- file.path(path.expand("~"),"Dropbox")
-    
-    #does this folder exist?
-    if(!dir.exists(dropbox_path)){
-      stop("The default script is not able to locate Dropbox on your computer. Please enter path manually in function argument dropbox_path = ")
-      }
-    }
-    VRG_files <- "VRG Files"
-
-    #full path name
-    VRG_files_full_path <- file.path(dropbox_path, VRG_files)
+  #VRG Files
+  VRG_datafiles <- file.path("VRG Files","R Code","DataFiles")
   
+  #full path name
+  VRG_files_full_path <- file.path(dropbox_path, VRG_datafiles)
+  
+  
+  #check if this path actually exists, if not, have user input custom path to VRG Files in local Dropbox
+  if(!file.exists(VRG_files_full_path)){
+    print("Unfortunately, it looks like this function is unable to find VRG Files/R Code/DataFiles on your computer. Please manually input path.")
+    print("Ex. ~/Dropbox/VRG Files/R Code/DataFiles or C:/Users/steve_zissou/AppData/Local/Dropbox/VRG Files/R Code/DataFiles, etc.")
+    VRG_files_full_path <- readline("Now, manually input path to VRG Files/R Code/DataFiles on your local machine WITHOUT QUOTES: ")
+    assign("VRG_files_full_path",VRG_files_full_path, envir = .GlobalEnv)
+  }
   
   
   ############################################################################
