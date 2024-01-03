@@ -12,6 +12,10 @@ pull_VRG_data_files <- function(newest = T, #do you want newest version of data 
                                 all_fish = F, #do you want all fish table?
                                 benthic_reef_spp = F #do you want benthic reef species table?
                                                       ){
+  #filepath to dropbox
+  dropbox_path <- file.path("~/Dropbox"
+  )
+  
   #VRG Files
   VRG_datafiles <- file.path("VRG Files","R Code","DataFiles")
   
