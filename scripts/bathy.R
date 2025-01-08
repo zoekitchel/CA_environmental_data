@@ -42,6 +42,9 @@ events[,flag_lat := ifelse(Latitude < 31, TRUE, FALSE)][,flag_long := ifelse(Lat
 #label if ARM
 events[,ARM := ifelse(DepthZone == "ARM",TRUE, FALSE)]
 
+#extract a site reference that is just mainland/island
+mainland_island <- 
+
 VRG_lat_lon_all <- unique(events[,.(Latitude, Longitude,SurveyDepth, flag_lat, flag_long, ARM, SamplingOrganization)])
 
 VRG_lat_lon_all[,Longitude := ifelse(!(Longitude >= -150 & Longitude <= -50),NA,Longitude)]
@@ -61,6 +64,61 @@ VRG_priority_lat_lon <- fread(file.path("VRG_sites","2022_DiveSitePriority_Coor_
 VRG_priority_lat_lon[,Latitude:= mean(Lat),.(Site)][,Longitude := mean(Lon),.(Site)]
 
 VRG_priority_lat_lon.r <- unique(VRG_priority_lat_lon[,.(Site,Latitude, Longitude, ARM)])
+
+#Version with no island sites
+VRG_priority_lat_lon.mainland <- VRG_priority_lat_lon.r[!grepl("SCLI|SCAI|SNI|SBI",VRG_priority_lat_lon.r$Site)]
+
+############################################################################
+#Load up all VRG & PISCO lat longs
+############################################################################
+MLPA_kelpforest_site_table_4 <- fread(file.path("raw_data","PISCO","MLPA_kelpforest_site_table.4.csv"))
+
+#Limit to correct geography
+MLPA_sites_socal <- MLPA_kelpforest_site_table_4[latitude < 34.509 & longitude > -120.5191 & longitude < -117.11189]
+
+#Only methods that include FISH
+MLPA_fish_socal <- MLPA_sites_socal[grepl("FISH",MLPA_sites_socal[,method]),]
+
+#Island mainland key
+island_mainland_key <- data.table(CA_MPA_Name_Short = 
+                                    c("Abalone Cove SMCA",                  "Anacapa Island SMCA",                "Anacapa Island SMR",                 "Arrow Point to Lion Head Point SMCA",
+                                      "Begg Rock SMR",                      "Blue Cavern Onshore SMCA",           "Cabrillo SMR",                       "Campus Point SMCA",                 
+                                      "Carrington Point SMR",               "Cat Harbor SMCA",                    "Crystal Cove SMCA",                  "Dana Point SMCA",                   
+                                       "Farnsworth Onshore SMCA",            "Gull Island SMR",                    "Harris Point SMR",                   "Laguna Beach SMR",                  
+                                       "Long Point SMR",                     "Lover's Cove SMCA",                  "Matlahuayl SMR",                     "N/A",                               
+                                       "Naples SMCA",                        "Painted Cave SMCA",                  "Point Conception SMR",               "Point Dume SMCA",                   
+                                       "Point Dume SMR",                     "Point Vicente SMCA",                 "Santa Barbara Island SMR",           "Scorpion SMR",                      
+                                       "South La Jolla SMR",                 "South Point SMR",                    "Swamis SMCA",                        "Vandenberg SMR"),
+                                  island_mainland = c("mainland", "island","island","island",
+                                    "island", "island","mainland","mainland",
+                                    "island","island","mainland","mainland",
+                                    "island","island","island","mainland",
+                                    "island","island","mainland","island",
+                                    "mainland", "island","mainland","mainland",
+                                    "mainland","mainland","island","island",
+                                    "mainland","island","mainland","mainland"))
+
+#Add island mainland status back to sites
+MLPA_fish_socal <- MLPA_fish_socal[island_mainland_key, on = "CA_MPA_Name_Short"]
+
+#Limit to only mainland sites
+MLPA_fish_socal_mainland <- MLPA_fish_socal[island_mainland == "mainland"]
+
+#Average lat lon from all years of data
+MLPA_fish_socal_mainland_lat_lon <- MLPA_fish_socal_mainland[,.(latitude = mean(latitude), longitude = mean(longitude)), .(site, CA_MPA_Name_Short, island_mainland)]
+
+#Change to VRG site naming convention
+MLPA_fish_socal_mainland_lat_lon[,Site:=(gsub("_"," ",site))][,Site:= stringr::str_to_title(Site)][,Site:=gsub(" W$"," West",Site)][,Site:=gsub(" E$"," East",Site)][,Site:=gsub(" N$"," North",Site)][,Site:=gsub(" S$"," South",Site)]
+MLPA_fish_socal_mainland_lat_lon[,Site:=(gsub("Children's Pool","Childrens Pool",site))][,Site:=(gsub("Swami's","Swamis",site))]
+
+#Merge VRG with PISCO
+VRG_PISCO_Fish_Mainland <- merge(MLPA_fish_socal_mainland_lat_lon,VRG_priority_lat_lon.mainland, on = "Site", all = T)
+
+#If a PISCO site, move lat lon over to Lat Lon for plotting
+VRG_PISCO_Fish_Mainland[,Latitude := ifelse(is.na(Latitude),latitude,Latitude)][,Longitude:=ifelse(is.na(Longitude),longitude,Longitude)]
+
+#If NA, then mainland site
+VRG_PISCO_Fish_Mainland[,ARM := ifelse(is.na(ARM),FALSE,ARM)]
 
 ############################################################################
 #Make a map with our survey points
@@ -396,4 +454,37 @@ full_CA_map <-
 full_CA_map
 
 ggsave(full_CA_map, path = file.path("figures","site_maps"), filename = "full_CA_map.jpg", height = 5, width = 5)
+
+##########################
+#Google map satellite background with PISCO sites
+##########################
+#to run, you'll need google maps API key (you'll have to copy key from zoe.j.kitchel google maps account)
+
+# Plot just SMB and sites around there
+
+#Set bounds, and get map info
+lats<-c(32.6,34.55)
+lons<-c(-121,-116.8)
+bb<-make_bbox(lon=lons,lat=lats,f=0.05)
+full_SMB_map<-get_map(bb,maptype="satellite")
+
+#map
+artificial_natural_artificial_reef_SMB <-
+  ggmap(full_SMB_map) + 
+  geom_point(data = VRG_PISCO_Fish_Mainland, aes(x = Longitude, y = Latitude,color = ARM, shape = ARM), size = 2, fill = NA, stroke = 0.5) +
+  scale_color_manual(values = c("yellow","red"),labels = c("Natural reef","Artificial reef")) +
+  scale_shape_manual(values = c(1,5),labels = c("Natural reef","Artificial reef")) +
+  labs(y = "Latitude", x = "Longitude", shape = "Reef type",color = "Reef type") +
+  scale_x_continuous(breaks = c(-120,-119,-118,-117),labels = c("120 ˚W","119˚W" ,"118 ˚W","117 ˚W"),
+                     expand = c(0, 0), limits = lons) +
+  scale_y_continuous(breaks = c(33,33.5,34,34.5),labels = c("33 ˚N" ,"33.5˚N","34 ˚N","34.5˚N"),
+                     expand = c(0, 0), limits = lats) +
+  annotation_scale(text_col = "white", width_hint = 0.5) + 
+  coord_sf(crs = 4326) +
+  theme_void() +
+  theme(axis.text = element_text(), axis.ticks = element_line(), legend.position = c(0.2,0.2))
+
+artificial_natural_artificial_reef_SMB
+
+ggsave(artificial_natural_artificial_reef_SMB, path = file.path("figures","site_maps"), filename = "artificial_natural_artificial_reef_SMB.jpg", height = 4, width = 6)
 

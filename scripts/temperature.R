@@ -28,6 +28,7 @@ library(oce) #delete if we don't end up using
 library(ocedata)
 library(raster)
 library(ncdf4)
+library(terra)
 library(sdmpredictors) #allows us to access 2002-2009 average from aquaMODIS quickly through BioOracle
 library(rnoaa) #directly access NOAA buoy data, note this package may be deprecated soon
 library(nngeo) #k-Nearest Neighbor Join for Spatial Data
@@ -159,7 +160,7 @@ vrg_lat_lon_dat_OISST <- OISST_data.avg[VRG_lat_lon_date_all.r, on = c(longitude
 #Works great! Not give you temperature data for sampling day unless we have full 12 months from OISST (aka, has to be June XXXX to have temperature averages for sampling season XXXX-1)
 
 ############################################################################
-#2) Use MUR (Multi-scale Ultra-high Resolution) is an analyzed SST product at 0.01-degree resolution going back to 2002 from RERDAP package
+##2) Use MUR (Multi-scale Ultra-high Resolution) is an analyzed SST product at 0.01-degree resolution going back to 2002 from RERDAP package
 ############################################################################
 
 #jplMURSST41 = dataset ID
@@ -277,7 +278,31 @@ VRG_lat_lon_date_all.r[,BO_sstseas := raster::extract(CA_sst.t[[4]], VRG_lat_lon
 
 ###########################################################################
 #4) Aqua MODIS
+
+#California merged satellite-derived 1-km dataset
+#Mati Kahru, mkahru@ucsd.edu    Updated : 9/20/2021
+
+#https://spg-satdata.ucsd.edu/ca1km/
 ############################################################################
+
+# Specify the file path
+file_path <- "/Users/kitchel/Downloads/Chla_fromInterp2x/C20212412021262_chl_comp.hdf"
+
+# List subdatasets available in the HDF file
+r <- raster::raster(file_path) #no subdatasets
+print(sds)
+
+# Read all subdatasets into a SpatRaster stack
+r_stack <- lapply(sds, rast)
+r_stack <- rast(file_path)
+
+# Plot the raster stack (this will show the first layer by default)
+plot(r_stack)
+
+# Get information about the stack
+print(r_stack)
+
+
 
 ###########################################################################
 #5) Closest NOAA Buoy

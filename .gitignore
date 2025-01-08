@@ -5,3 +5,4 @@
 contours_5m.shp
 *.adf
 *.txt
+*.DS_Store

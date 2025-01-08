@@ -16,8 +16,8 @@
 #Calculate transect mean (using quantitative representations of relief)
 #Also calculate variability, measured as both SD and simpson diversity (includes both evenness and richness)
 ############################################################################
-get_relief <- function(UPC_complete){
-
+get_relief <- function(UPC_complete, source = "VRG"){
+if(source == "VRG"){
   UPC_complete <- data.table(UPC_complete)
   relief_only <- UPC_complete[Category == "UPC Relief",]
 
@@ -62,7 +62,55 @@ get_relief <- function(UPC_complete){
   #return a site/year/transect table
   
           return(relief_by_transect)
-      }
+}
+  if(source == "PISCO_dataone"){
+    UPC_complete <- data.table(UPC_complete)
+    relief_only <- UPC_complete[category == "RELIEF",]
+    
+    relief_only[, Relief_quant := ifelse(classcode == "FLATREL", 0.0, 
+                                         ifelse(classcode == "SLTREL", 0.0,
+                                                ifelse(classcode == "MODREL", 1.0, 
+                                                       ifelse(classcode == "HIREL",2.0,NA))))] # scales off of lowest value
+    
+    #all relief less than 1 m has the same relief value, so we will simplify to this value instead of Taxa designation and remove taxa column
+    #three rows per transect instead of 4
+    
+    #take sum of BRS_per_cov for each Relief_quant, and change to 0.XXX instead of XX.X%
+    relief_only[, BRS_per_cov_decimal := sum(pct_cov/100),.(campus, method, survey_year, year, month, day, site, zone, transect, category, Relief_quant)]
+    
+    #new data table with 3 rows per transect instead of 4
+    relief_only.r <- unique(relief_only[,.(campus, method, survey_year, year, month, day, site, zone, transect, category, Relief_quant, BRS_per_cov_decimal)])
+    
+    #take dot product per transect (sum of each relief type * percent cover), %*% = dot product
+    relief_only.r[, Relief_index := (BRS_per_cov_decimal) %*% Relief_quant, .(campus, method, survey_year, year, month, day, site, zone, transect, category)] 
+    
+    #how many points for each relief type, given #meters sampled = 31
+    relief_only.r[, relief_points := round(BRS_per_cov_decimal*31,0)]
+    
+    #SD of relief over space
+    relief_only.r[, Relief_SD := sd(rep(Relief_quant,relief_points)), .(campus, method, survey_year, year, month, day, site, zone, transect, category)]
+    
+    #Simpson's Diversity Index is a measure of diversity which takes into account the number of species present, 
+    #as well as the relative abundance of each species.
+    
+    #equation = 1-(sum(n(n-1))/N(N-1)) where n = # of meters of each relief type and N = total # of meters in transect (always 31)
+    #we will take simpson's diversity of relief
+    #numerator (n(n-1)) and excluding all 0s
+    
+    relief_only.r[, Relief_simpson_numerator := ifelse(relief_points == 0, 0, sum(relief_points)*(sum(relief_points)-1)),.(campus, method, survey_year, year, month, day, site, zone, transect, category, Relief_quant)]
+    
+    #calculate Simpson diversity index for each transect
+    relief_only.r[, Relief_simpson := 1-sum(Relief_simpson_numerator)/(31*(31-1)), .(campus, method, survey_year, year, month, day, site, zone, transect, category)]
+    
+    #reduce to unique transects
+    relief_by_transect <- unique(relief_only.r[,.(campus, method, survey_year, year, month, day, site, zone, transect, category, Relief_index, Relief_SD, Relief_simpson)])
+    
+    #return a site/year/transect table
+    
+    return(relief_by_transect)
+  }
+  
+}
 
 #model and plotting SD vs Simpson diversity index for visualization
 # relief_simp_SD_lm <- lm(Relief_simpson~Relief_SD, data = relief_by_transect)
@@ -100,8 +148,9 @@ get_relief <- function(UPC_complete){
 #Also, variability (spatial heterogeneity)
 ############################################################################
 
-get_substrate <- function(UPC_complete){
+get_substrate <- function(UPC_complete, source = "VRG"){
   
+  if(source == "VRG"){
   UPC_complete <- data.table(UPC_complete)
   substrate_only <- UPC_complete[Category == "UPC Substrate",]
   
@@ -137,6 +186,46 @@ get_substrate <- function(UPC_complete){
   #return a site/year/transect table
   
   return(substrate_by_transect)
+  }
+  
+  if(source == "PISCO_dataone"){
+    UPC_complete <- data.table(UPC_complete)
+    substrate_only <- UPC_complete[category == "SUBSTRATE",]
+    
+    substrate_only[, Substrate_quant := ifelse(classcode == "SAND", 1.0, 
+                                               ifelse(classcode == "COB", 2.0,
+                                                      ifelse(classcode == "BOULD", 3.0, 
+                                                             ifelse(classcode == "BEDRK",4.0,NA))))] # scales off of lowest value
+    
+    #take dot product per transect (percent cover in decimals * # corresponding with substrate type), %*% = dot product
+    substrate_only[, Substrate_index := (pct_cov/100) %*% Substrate_quant, .(campus, method, survey_year, year, month, day, site, zone, transect, category)] 
+    
+    #how many points for each substrate type, given #meters sampled = 31
+    substrate_only[, substrate_points := round((pct_cov/100)*31,0)]
+    
+    #SD of substrate over space
+    substrate_only[, Substrate_SD := sd(rep(Substrate_quant,substrate_points)), .(campus, method, survey_year, year, month, day, site, zone, transect, category)]
+    
+    #Simpson's Diversity Index is a measure of diversity which takes into account the number of species present, 
+    #as well as the relative abundance of each species.
+    
+    #equation = 1-(sum(n(n-1))/N(N-1)) where n = # of meters of each substrate type and N = total # of meters in transect (always 31)
+    #we will take simpson's diversity of substrate
+    #numerator (n(n-1)) and excluding all 0s
+    
+    substrate_only[, Substrate_simpson_numerator := ifelse(substrate_points == 0, 0, sum(substrate_points)*(sum(substrate_points)-1)),.(campus, method, survey_year, year, month, day, site, zone, transect, category, Substrate_quant)]
+    
+    #calculate Simpson diversity index for each transect
+    substrate_only[, Substrate_simpson := 1-sum(Substrate_simpson_numerator)/(31*(31-1)), .(campus, method, survey_year, year, month, day, site, zone, transect, category)]
+    
+    #reduce to unique transects
+    substrate_by_transect <- unique(substrate_only[,.(campus, method, survey_year, year, month, day, site, zone, transect, category, Substrate_index, Substrate_SD, Substrate_simpson)])
+    
+    #return a site/year/transect table
+    
+    return(substrate_by_transect)
+  }
+    
 }
 
 #model and plotting SD vs Simpson diversity index for visualization
