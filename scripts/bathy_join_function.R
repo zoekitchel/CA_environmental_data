@@ -9,9 +9,11 @@
 ##############################################################################
 #There are multiple options for where to get bathymetry data:
 #method = "ETOPO": Marmap package (but our sites may be too close to shore for this to work, example below anyway though)
-#method = "CDFW": Full state of California out to 200 eez lower rez: https://wildlife.ca.gov/Conservation/Marine/GIS/Downloads (Arc/Info Binary Grid (ADF) )
-#200mEEZ_BathyGrids.zip > bd200m_v2i
 #method = "USGS_socal": USGS, SoCal only, "A Seamless, High-Resolution, Coastal Digital Elevation Model (DEM) for Southern California": https://pubs.usgs.gov/ds/487/ds487_text.pdf
+
+#Depricated
+  #method = "CDFW": Full state of California out to 200 eez lower rez: https://wildlife.ca.gov/Conservation/Marine/GIS/Downloads (Arc/Info Binary Grid (ADF) ), but we already have data
+        #200mEEZ_BathyGrids.zip > bd200m_v2i
 
 ##############################################################################
 
@@ -24,7 +26,7 @@
 
 #lat_lon input must be data frame with lat and lon in Longitude and Latitude columns, okay if there are other columns
 
-add_depth_columns <- function(lat_lon, ETOPO = F, CDFW = F, USGS_socal=F, dist_200m = F){ 
+add_depth_columns <- function(lat_lon, ETOPO = F, USGS_socal=F, ETOPO_dist_200m = F){ 
   
   if(!("Longitude" %in% colnames(lat_lon)) | !("Latitude" %in% colnames(lat_lon))){
     if("longitude" %in% colnames(lat_lon)){
@@ -59,12 +61,12 @@ add_depth_columns <- function(lat_lon, ETOPO = F, CDFW = F, USGS_socal=F, dist_2
     
   }
   
-  if(CDFW == T){
+  if(CDFW == T){ #this is now deprecated
     
     temp <- tempdir()
     
     #download file to temp directory
-    download.file("https://filelib.wildlife.ca.gov/Public/R7_MR/BATHYMETRY/200mEEZ_BathyGrids.zip", file.path(temp,"200mEEZ_BathyGrids.zip")) 
+    download.file("https://filelib.wildlife.ca.gov/Public/R7_MR/BATHYMETRY/200mEEZ_BathyGrids.zip", file.path(temp,"200mEEZ_BathyGrids.zip")) #can no longer download from web
     
     #unzip file
     unzip(file.path(temp,"200mEEZ_BathyGrids.zip"), exdir = temp)
@@ -100,41 +102,15 @@ add_depth_columns <- function(lat_lon, ETOPO = F, CDFW = F, USGS_socal=F, dist_2
       }
   }
   
-  if(dist_200m == T){
+  if(ETOPO_dist_200m == T){
     
-    options(timeout=1000) #allow more time to download large rasters
-    
-    temp <- tempdir()
-    
-    #download file to temp directory
-    download.file("https://filelib.wildlife.ca.gov/Public/R7_MR/BATHYMETRY/contours_5m.zip", file.path(temp,"contours_5m.zip")) #very large, takes a while
-    
-    #unzip file
-    unzip(file.path(temp,"contours_5m.zip"), exdir = temp)
-    
-    CA_contours_5m <- read_sf(file.path(temp,"contours_5m.shp"))
-    
-    CA_200m_contour <- CA_contours_5m %>% filter(CONTOUR == -200)
-    CA_0m_contour <- CA_contours_5m %>% filter(CONTOUR == 0)
-    
-    #convert points to sf with non-projected crs (must do first)
-    lat_lon_only.sf <- st_as_sf(lat_lon_only, coords = c("Longitude", "Latitude"),
-                                crs = 4326) # WGS84 - a good default for unprojected coords)
-    
-    lat_lon_only.t <- st_transform(lat_lon_only.sf, crs = crs(CA_200m_contour)) #convert to raster projection for extraction
-    
-    #calculate distance of point to each of 37 spatial features in CA_200m_contour
-    site_dist_200m <- data.table(st_distance(lat_lon_only.t, CA_200m_contour))
-    
-    #we only want closest value (minimum distance)
-    # Find the minimum distance for each row
-    site_dist_200m_min <- apply(site_dist_200m, 1, min)
+    site_dist_200m <- data.table(dist2isobath(marmap_bathy, lat_lon_only$Longitude, lat_lon_only$Latitude, isobath = 200))
     
     #make new copy of lat lon only to add new column to so no repeats if we have T for multiple bathy types
     lat_lon_only.c <- copy(lat_lon_only)
     
     #match sites to distances
-    lat_lon_only.c[, dist_200m_bath:= site_dist_200m_min]
+    lat_lon_only.c[, dist_200m_bath:= site_dist_200m$distance]
     
     #link up (either to other bathy if it exists or just with lat lon coordinates)
       #merge with main 'return' output
