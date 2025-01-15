@@ -5,7 +5,7 @@
 
 #Zoë J. Kitchel
 #Created 13 December 2023
-#Modified 14 December 2023
+#Modified 15 January 2025
 ##############################################################################
 #There are multiple options for where to get bathymetry data:
 #method = "ETOPO": Marmap package (but our sites may be too close to shore for this to work, example below anyway though)
@@ -27,7 +27,12 @@
 add_depth_columns <- function(lat_lon, ETOPO = F, CDFW = F, USGS_socal=F, dist_200m = F){ 
   
   if(!("Longitude" %in% colnames(lat_lon)) | !("Latitude" %in% colnames(lat_lon))){
-    stop("Are you sure you have Longitude and Latitude columns in this dataframe?")
+    if("longitude" %in% colnames(lat_lon)){
+      data.table::setnames(lat_lon, c("latitude","longitude"),c("Latitude","Longitude"))
+    }
+    if(!("longitude" %in% colnames(lat_lon))){
+      stop("Are you sure you have Longitude and Latitude columns in this dataframe?")
+    }
   }
   
   lat_lon_only <- data.table(lat_lon)
