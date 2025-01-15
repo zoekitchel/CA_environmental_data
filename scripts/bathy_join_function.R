@@ -61,47 +61,47 @@ add_depth_columns <- function(lat_lon, ETOPO = F, USGS_socal=F, ETOPO_dist_200m 
     
   }
   
-  if(CDFW == T){ #this is now deprecated
-    
-    temp <- tempdir()
-    
-    #download file to temp directory
-    download.file("https://filelib.wildlife.ca.gov/Public/R7_MR/BATHYMETRY/200mEEZ_BathyGrids.zip", file.path(temp,"200mEEZ_BathyGrids.zip")) #can no longer download from web
-    
-    #unzip file
-    unzip(file.path(temp,"200mEEZ_BathyGrids.zip"), exdir = temp)
-    
-    #depth data
-    bathy_200m <- raster::raster(file.path(temp,"bd200m_v2i", "w001001.adf"))
-    bathy_200m.dt <- data.table(as.data.frame(values(bathy_200m))) #just depth values
-    bathy_200m.xy <- data.table(as.data.frame(bathy_200m, xy = T)) #this should extract x/y and depth values correctly, but for some reason data are factored, so I have to do manually in next step
-    
-    bathy_200m.dt <- cbind(bathy_200m.xy[,.(x,y)],bathy_200m.dt[,.(`values(bathy_200m)`)]) #link x/y with depth values
-    
-    #coordinate system of raster
-    crs_Raster <- sf::st_crs(raster::crs(bathy_200m))
-    
-    #convert points to sf with non-projected crs (must do first)
-      lat_lon_only.sf <- st_as_sf(lat_lon_only, coords = c("Longitude", "Latitude"),
-                                   crs = 4326) # WGS84 - a good default for unprojected coords)
-    
-      lat_lon_only.t <- st_transform(lat_lon_only.sf, crs = crs_Raster) #convert to raster projection for extraction
-    
-      #make new copy of lat lon only to add new column to so no repeats if we have T for multiple bathy types
-      lat_lon_only.c <- copy(lat_lon_only)
-      
-    #match sites to depths
-      lat_lon_only.c[, CDFW_200m:= extract(bathy_200m, lat_lon_only.t)]
-      
-      #link up (either to other bathy if it exists or just with lat lon coordinates)
-        #merge with main 'return' output
-      if(exists("lat_lon_bathy")){
-      lat_lon_bathy <- lat_lon_bathy[lat_lon_only.c, on = c("Longitude","Latitude"), all = T]
-      }else{
-      lat_lon_bathy <- lat_lon[lat_lon_only.c, on = c("Longitude","Latitude"), all = T]
-      }
-  }
-  
+  # if(CDFW == T){ #this is now deprecated
+  #   
+  #   temp <- tempdir()
+  #   
+  #   #download file to temp directory
+  #   download.file("https://filelib.wildlife.ca.gov/Public/R7_MR/BATHYMETRY/200mEEZ_BathyGrids.zip", file.path(temp,"200mEEZ_BathyGrids.zip")) #can no longer download from web
+  #   
+  #   #unzip file
+  #   unzip(file.path(temp,"200mEEZ_BathyGrids.zip"), exdir = temp)
+  #   
+  #   #depth data
+  #   bathy_200m <- raster::raster(file.path(temp,"bd200m_v2i", "w001001.adf"))
+  #   bathy_200m.dt <- data.table(as.data.frame(values(bathy_200m))) #just depth values
+  #   bathy_200m.xy <- data.table(as.data.frame(bathy_200m, xy = T)) #this should extract x/y and depth values correctly, but for some reason data are factored, so I have to do manually in next step
+  #   
+  #   bathy_200m.dt <- cbind(bathy_200m.xy[,.(x,y)],bathy_200m.dt[,.(`values(bathy_200m)`)]) #link x/y with depth values
+  #   
+  #   #coordinate system of raster
+  #   crs_Raster <- sf::st_crs(raster::crs(bathy_200m))
+  #   
+  #   #convert points to sf with non-projected crs (must do first)
+  #     lat_lon_only.sf <- st_as_sf(lat_lon_only, coords = c("Longitude", "Latitude"),
+  #                                  crs = 4326) # WGS84 - a good default for unprojected coords)
+  #   
+  #     lat_lon_only.t <- st_transform(lat_lon_only.sf, crs = crs_Raster) #convert to raster projection for extraction
+  #   
+  #     #make new copy of lat lon only to add new column to so no repeats if we have T for multiple bathy types
+  #     lat_lon_only.c <- copy(lat_lon_only)
+  #     
+  #   #match sites to depths
+  #     lat_lon_only.c[, CDFW_200m:= extract(bathy_200m, lat_lon_only.t)]
+  #     
+  #     #link up (either to other bathy if it exists or just with lat lon coordinates)
+  #       #merge with main 'return' output
+  #     if(exists("lat_lon_bathy")){
+  #     lat_lon_bathy <- lat_lon_bathy[lat_lon_only.c, on = c("Longitude","Latitude"), all = T]
+  #     }else{
+  #     lat_lon_bathy <- lat_lon[lat_lon_only.c, on = c("Longitude","Latitude"), all = T]
+  #     }
+  # }
+  # 
   if(ETOPO_dist_200m == T){
     
     site_dist_200m <- data.table(dist2isobath(marmap_bathy, lat_lon_only$Longitude, lat_lon_only$Latitude, isobath = 200))
