@@ -104,7 +104,7 @@ add_depth_columns <- function(lat_lon, ETOPO = F, USGS_socal=F, ETOPO_dist_200m 
   # 
   if(ETOPO_dist_200m == T){
     
-    site_dist_200m <- data.table(dist2isobath(marmap_bathy, lat_lon_only$Longitude, lat_lon_only$Latitude, isobath = 200))
+    site_dist_200m <- data.table(dist2isobath(marmap_bathy, lat_lon_only$Longitude, lat_lon_only$Latitude, isobath = -200))
     
     #make new copy of lat lon only to add new column to so no repeats if we have T for multiple bathy types
     lat_lon_only.c <- copy(lat_lon_only)
