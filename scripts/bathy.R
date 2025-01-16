@@ -6,10 +6,13 @@
 ##############################################################################
 #There are multiple options for where to get bathymetry data:
   #1) Marmap package (but our sites may be too close to shore for this to work, example below anyway though)
-  #2) Full state of California out to 200 eez lower rez: https://wildlife.ca.gov/Conservation/Marine/GIS/Downloads (Arc/Info Binary Grid (ADF) )
-            #200mEEZ_BathyGrids.zip > bd200m_v2i
+
   #3) USGS, SoCal only, "A Seamless, High-Resolution, Coastal Digital Elevation Model (DEM) for Southern California": https://pubs.usgs.gov/ds/487/ds487_text.pdf
   #4) We have some (limited) site specific bathymetry. Talk to Chelsea. Not included here.
+
+#Deprecated
+#2) Full state of California out to 200 eez lower rez: https://wildlife.ca.gov/Conservation/Marine/GIS/Downloads (Arc/Info Binary Grid (ADF) )
+#200mEEZ_BathyGrids.zip > bd200m_v2i (no longer available)
 
 ##############################################################################
 #SETUP#
@@ -190,8 +193,11 @@ autoplot.bathy(bathy_VRG, geom=c("tile"
         legend.box.just = "right",
         legend.box.background = element_rect(colour = "black"))
 
+#Now, we will also calculate distance to 200m shelf break using marmap
+site_dist_200m <- data.table(dist2isobath(bathy_VRG, VRG_lat_lon_all.r$Longitude, VRG_lat_lon_all.r$Latitude, isobath = -200))
+
 ###########################################################################
-#2) California from CDFW
+#2) California from CDFW **DEPRECATED NO LONGER WORKS**
 ############################################################################
 
 #depth data
