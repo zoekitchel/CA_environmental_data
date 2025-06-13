@@ -37,6 +37,7 @@ add_depth_columns <- function(lat_lon, ETOPO = F, USGS_socal=F, ETOPO_dist_200m 
     }
   }
   
+  lat_lon <- data.table(lat_lon)
   lat_lon_only <- data.table(lat_lon)
   
   if(any(is.na(lat_lon_only))) {
@@ -50,8 +51,8 @@ add_depth_columns <- function(lat_lon, ETOPO = F, USGS_socal=F, ETOPO_dist_200m 
     #set square from which to extract bathy data from NOAA server
     marmap_bathy <- getNOAA.bathy(min(lat_lon_only$Longitude)-0.5, max(lat_lon_only$Longitude)+0.5, min(lat_lon_only$Latitude)-0.5, max(lat_lon_only$Latitude)+0.5, resolution = 0.000001) #bathymetry matrix
   
-    #make new copy of lat lon only to add new column to so no repeats if we have T for multiple bathy types
-    lat_lon_only.c <- copy(lat_lon_only)
+    #make new data.table of lat lon only to add new column to so no repeats if we have T for multiple bathy types
+    lat_lon_only.c <- data.table(lat_lon_only)
     
     #get depth info for specified lat lon coordinates
     lat_lon_only.c[,ETOPODepth := get.depth(marmap_bathy, lat_lon_only.c, locator=F)$depth]
