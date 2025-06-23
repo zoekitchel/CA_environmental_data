@@ -40,7 +40,7 @@ temp_join <- function(lat_lon, annual = F, min_max = F){
   
 #Scrape links to monthly temp values from UCSD website
 #first, navigate to year page (need to source from GitHub)
-folder_urls <- readLines(file.path("scripts","ucsd_data_download_1km_sst_2016_2024.txt"))
+folder_urls <- readLines("https://raw.githubusercontent.com/zoekitchel/CA_environmental_data/refs/heads/main/data/ucsd_sstchl/ucsd_data_download_1km_sst_2016_2024.txt")
 
 #empty data.table
 full_link.dt <- data.table()
@@ -76,8 +76,29 @@ for(i in 1:length(folder_urls)){
 #empty data table to fill with site, and month specific data
 lat_lon_variable_full <- data.table()
 
-#load up hdf key with lat lon
-hdf_key <- stack(file.path("scripts","cal_aco_3840_Latitude_Longitude.hdf"))
+#load up hdf key with lat lon (download if it doesn't exist locally already)
+
+get_hdf_stack <- function(file_name, download_url) {
+  # Search for the file in working directory and all subfolders
+  all_files <- list.files(path = ".", pattern = file_name, recursive = TRUE, full.names = TRUE)
+  
+  if (length(all_files) == 0) {
+    message("File not found locally. Downloading...")
+    download.file(download_url, destfile = file_name, mode = "wb")
+    file_to_use <- file_name
+  } else {
+    file_to_use <- all_files[1]
+    message("Using local file: ", file_to_use)
+  }
+  
+  # Load the HDF file as a RasterStack
+  hdf_stack <- raster::stack(file_to_use)
+  
+  return(hdf_stack)
+}
+
+hdf_key <- get_hdf_stack(file_name = "cal_aco_3840_Latitude_Longitude.hdf", download_url = "http://wimsoft.com/CAL/files/cal_aco_3840_Latitude_Longitude.hdf")
+
 
 #trim to study area
 crop_ext <- extent(1617,2069,1727,2204)
