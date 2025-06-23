@@ -7,4 +7,5 @@ contours_5m.shp
 *.txt
 *.DS_Store
 .Rapp.history
-scripts/cal_aco_3840_Latitude_Longitude.hdf
+data/ucsd_sstchl/cal_aco_3840_Latitude_Longitude.hdf
+.DS_Store
