@@ -3,7 +3,7 @@
 
 #This function needs the following packages to work
 #library(data.table)
-#library(dplyr) or library(tidyverse)
+#library(tidyverse)
 #library(rvest)
 #library(raster)
 #library(sf)
@@ -154,15 +154,20 @@ chl_join <- function(lat_lon, annual = F, min_max = F){
     
     value <- raster::extract(new_raster,lat_lon_site.t)
     
-    missing_idx <- which(is.nan(value))
-    
-    missing_rows <- lat_lon_site.t[missing_idx,] #identify missing points
-    
-    neighborhood_values <- raster::extract(new_raster,missing_rows, buffer = 10000, fun = mean, na.rm = TRUE)
-    
-    # Fill missing values with neighborhood means
-    value[missing_idx] <- neighborhood_values
-    
+    #If NA values exist, take neighborhood of these points
+    if(any(is.na(value))){
+      
+      missing_idx <- which(is.nan(value))
+      
+      missing_rows <- lat_lon_site.t[missing_idx,] #identify missing points
+      
+      neighborhood_values <- raster::extract(new_raster,missing_rows, buffer = 10000, fun = mean, na.rm = TRUE)
+      
+      # Fill missing values with neighborhood means
+      value[missing_idx] <- neighborhood_values
+      
+    }
+   
     #copy input lat lon 
     lat_lon_variable <- copy(lat_lon)
     
