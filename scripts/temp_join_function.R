@@ -1,3 +1,5 @@
+#This function matches sea surface temperature data from Scripps Oceanography (see ucsd_metadata.R) to a list of Latitudes and Longitudes in the Southern California Bight
+
 
 #This function needs the following packages to work
 #library(data.table)
@@ -36,8 +38,8 @@ temp_join <- function(lat_lon, annual = F, min_max = F){
   
   print("Your input looks good! Now get a snack, it will take some time to download these high-rez data.")
   
-#Scrape links to monthly temp and chlorophyll values from UCSD website
-#first, navigate to year page
+#Scrape links to monthly temp values from UCSD website
+#first, navigate to year page (need to source from GitHub)
 folder_urls <- readLines(file.path("scripts","ucsd_data_download_1km_sst_2016_2024.txt"))
 
 #empty data.table
@@ -87,7 +89,7 @@ hdf_key.xyz <- data.table(rasterToPoints(hdf_key.c))
 
 colnames(hdf_key.xyz) <- c("x","y","latitude","longitude")
 
-#download and process each kmz file and populate data table with chlorophyll and temp data
+#download and process each kmz file and populate data table with temp data
 for(i in 1:nrow(full_link.dt)){
   temp <- tempdir()
   download.file(full_link.dt[i,link_long], file.path(temp, "temp.hdf"))
@@ -157,14 +159,10 @@ for(i in 1:nrow(full_link.dt)){
   
 }
 
-#Note that values use 1 byte per pixel with standard scaling. Linear scaling is used for SST and logarithmic scaling for Chl: https://spg-satdata.ucsd.edu/Readme.htm
-#so, conversions
+#Note that values use 1 byte per pixel with standard scaling. Linear scaling is used for SST.
 #SST (deg C) = 0.15 * PV - 3.0
 lat_lon_variable_full <- lat_lon_variable_full %>%
   mutate(sst_adj = 0.15*sst-3.0)
-
-#Chl (mg m-3) = 10^(0.015 * PV - 2.0), i.e. 10 to the power of 0.015 * PV - 2.0
-lat_lon_site_variable_full[variable == "chl",value_adj :=10^(0.015*value-2.0)]
 
 #If we just want a single overall average for each site (mean only)
 if(annual == F & min_max == F){
@@ -194,11 +192,12 @@ if(annual == F & min_max == T){
                                                                         min_sst = min(sst_min_annual))
   
   return(average_temperature_site_meanminmax)
-  
+
 }
 
 #If we want annual values but only for mean
 if(annual == T & min_max == F){
+
   lat_lon_site_variable_full_mean <- lat_lon_site_variable_full %>%
     group_by(AR_complex, Site, year) %>%
     summarize(sst_avg_annual = mean(sst_adj, na.rm = T))
@@ -217,4 +216,5 @@ if(annual == T & min_max == T){
  return(lat_lon_variable_full_meanminmax)
   }
 }
+
 
