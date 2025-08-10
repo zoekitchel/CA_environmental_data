@@ -5,7 +5,7 @@
 #library(data.table)
 #library(dplyr) or library(tidyverse)
 #library(rvest)
-#library(raster)
+#library(terra) #Changed from raster to terra August 10, 2025
 #library(sf)
 
 #######TEMP san diego 1km satellite
@@ -92,12 +92,16 @@ get_hdf_stack <- function(file_name, download_url) {
   }
   
   # Load the HDF file as a RasterStack
-  hdf_stack <- raster::stack(file_to_use)
+ # hdf_stack <- raster::stack(file_to_use) OLD
+  
+  # Load the HDF file as a SpatRaster
+  hdf_stack <- rast(file_to_use)
   
   return(hdf_stack)
 }
 
-hdf_key <- get_hdf_stack(file_name = "cal_aco_3840_Latitude_Longitude.hdf", download_url = "http://wimsoft.com/CAL/files/cal_aco_3840_Latitude_Longitude.hdf")
+hdf_key <- get_hdf_stack(file_name = "cal_aco_3840_Latitude_Longitude.hdf",
+                         download_url = "http://wimsoft.com/CAL/files/cal_aco_3840_Latitude_Longitude.hdf")
 
 
 #trim to study area
@@ -117,7 +121,7 @@ for(i in 1:nrow(full_link.dt)){
   hdf <- raster(file.path(temp, "temp.hdf"))
   
   #trim to study area
-  crop_ext <- extent(1617,2069,1727,2204)
+  crop_ext <- ext(1617,2069,1727,2204)
   
   hdf.c <- crop(hdf, crop_ext)
   
@@ -125,7 +129,7 @@ for(i in 1:nrow(full_link.dt)){
   hdf.c.re <- reclassify(hdf.c, cbind(255, NA)) #"values of 0 and 255 are considered invalid"
   
   #convert into data table
-  hdf.xyz <- data.table(rasterToPoints(hdf.c.re))
+  hdf.xyz <- data.table(as.data.frame(hdf.c.re, xy = TRUE))
   
   colnames(hdf.xyz) <- c("x","y","value")
   
