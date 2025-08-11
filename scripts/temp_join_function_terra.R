@@ -270,6 +270,3 @@ temp_join <- function(lat_lon, grouping_var = "Site", annual = F, min_max = F){
       return(lat_lon_variable_full_meanminmax)
     }
   }
-  
-  
-  
