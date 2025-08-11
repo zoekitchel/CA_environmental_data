@@ -164,7 +164,7 @@ temp_join <- function(lat_lon, grouping_var = "Site", annual = F, min_max = F){
     )
     
     # Prepare site points
-    lat_lon_coords <- lat_lon %>% select(Longitude, Latitude)
+    lat_lon_coords <- lat_lon %>% dplyr::select(Longitude, Latitude)
     lat_lon.sf <- st_as_sf(lat_lon_coords, coords = c("Longitude", "Latitude"), crs = 4326)
     lat_lon.sf <- st_transform(lat_lon.sf, crs(new_raster))
     
