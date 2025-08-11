@@ -171,6 +171,7 @@ temp_join <- function(lat_lon, grouping_var = "Site", annual = F, min_max = F){
     # Extract
     value <- terra::extract(new_raster, terra::vect(lat_lon.sf))[, 2]
     
+    
     # Fill NAs with neighborhood mean
     if (anyNA(value)) {
       missing_idx <- which(is.na(value))
@@ -194,6 +195,9 @@ temp_join <- function(lat_lon, grouping_var = "Site", annual = F, min_max = F){
     
     message(i, " out of ", nrow(full_link.dt))
     
+    
+  }
+  
     # Final SST adjustment
     lat_lon_variable_full <- lat_lon_variable_full %>%
       mutate(sst_adj = 0.15 * sst - 3.0)
