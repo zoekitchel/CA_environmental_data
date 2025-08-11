@@ -18,6 +18,7 @@
 #Arguments
 #annual = F (if F, exports average from 2016 until 2024, if T, gives value for each year)
 #min_max = F (if F, exports mean annual temp only, if T, gives min and max)
+#grouping_Var = "Site" ; for what scale do you want to calculate chl? default = "Site" (What's your other column namee in lat_lon?)
 #If annual = T and min_max = T, it will give annual mean, min, and max values
 #If annual = F and min_max = T, it will give average mean, min, and max values between 2016 and 2024
 
