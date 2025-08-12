@@ -198,76 +198,76 @@ temp_join <- function(lat_lon, grouping_var = "Site", annual = F, min_max = F){
     
     
   }
+  #Check why some temp values are missing
+  # Final SST adjustment
+  lat_lon_variable_full <- lat_lon_variable_full %>%
+    mutate(sst_adj = 0.15 * sst - 3.0)
   
-    # Final SST adjustment
-    lat_lon_variable_full <- lat_lon_variable_full %>%
-      mutate(sst_adj = 0.15 * sst - 3.0)
+  
+  #If we just want a single overall average for each site (mean only)
+  if (!annual && !min_max) {
+    lat_lon_variable_full_mean <- lat_lon_variable_full %>%
+      group_by(Site, year) %>%
+      mutate(sst_avg_annual = mean(sst_adj, na.rm = TRUE)) %>%
+      ungroup()
     
+    average_temperature_site <- lat_lon_variable_full_mean %>%
+      group_by(Site) %>%
+      summarise(mean_sst = mean(sst_avg_annual, na.rm = T), .groups = "drop") %>%
+      rename(!!sym(grouping_var) := Site)
     
-    #If we just want a single overall average for each site (mean only)
-    if (!annual && !min_max) {
-      lat_lon_variable_full_mean <- lat_lon_variable_full %>%
-        group_by(Site, year) %>%
-        mutate(sst_avg_annual = mean(sst_adj, na.rm = TRUE)) %>%
-        ungroup()
-      
-      average_temperature_site <- lat_lon_variable_full_mean %>%
-        group_by(Site) %>%
-        summarise(mean_sst = mean(sst_avg_annual), .groups = "drop") %>%
-        rename(!!sym(grouping_var) := Site)
-      
-      return(average_temperature_site)
-    }
-    
-    #If we want overall average mean, minimum, and maximum for each site
-    if(annual == F & min_max == T){
-      lat_lon_variable_full_meanminmax <- lat_lon_variable_full %>%
-        group_by(Site, year) %>%
-        mutate(sst_avg_annual = mean(sst_adj, na.rm = T),
-               sst_max_annual = max(sst_adj, na.rm = T),
-               sst_min_annual = min(sst_adj, na.rm = T)) %>% ungroup()
-      
-      #Then take average of averages
-      average_temperature_meanminmax <- lat_lon_variable_full_meanminmax %>% 
-        group_by (Site) %>%
-        summarise(mean_sst = mean(sst_avg_annual),
-                  max_sst = max(sst_max_annual),
-                  min_sst = min(sst_min_annual))
-      
-      #If grouping var doesn't = Site, swap name back
-      average_temperature_site <- average_temperature_site %>%
-        rename(!!sym(grouping_var) := Site)
-      
-      return(average_temperature_site_meanminmax)
-      
-    }
-    
-    #If we want annual values but only for mean
-    if(annual == T & min_max == F){
-      
-      lat_lon_site_variable_full_mean <- lat_lon_site_variable_full %>%
-        group_by(Site, year) %>%
-        summarize(sst_avg_annual = mean(sst_adj, na.rm = T))
-      
-      #If grouping var doesn't = Site, swap name back
-      average_temperature_site <- average_temperature_site %>%
-        rename(!!sym(grouping_var) := Site)
-      
-      return(lat_lon_site_variable_full_mean)
-    }
-    
-    #If we want annual values for mean, max, and min
-    if(annual == T & min_max == T){
-      lat_lon_variable_full_meanminmax <- lat_lon_variable_full %>%
-        group_by(Site, year) %>%
-        summarize(sst_avg_annual = mean(sst_adj, na.rm = T),
-                  sst_max_annual = max(sst_adj, na.rm = T),
-                  sst_min_annual = min(sst_adj, na.rm = T))
-      
-      #If grouping var doesn't = Site, swap name back
-      average_temperature_site <- average_temperature_site %>%
-        rename(!!sym(grouping_var) := Site)
-      
-      return(lat_lon_variable_full_meanminmax)
-    }
+    return(average_temperature_site)
   }
+  
+  #If we want overall average mean, minimum, and maximum for each site
+  if(annual == F & min_max == T){
+    lat_lon_variable_full_meanminmax <- lat_lon_variable_full %>%
+      group_by(Site, year) %>%
+      mutate(sst_avg_annual = mean(sst_adj),
+             sst_max_annual = max(sst_adj),
+             sst_min_annual = min(sst_adj)) %>% ungroup()
+    
+    #Then take average of averages
+    average_temperature_meanminmax <- lat_lon_variable_full_meanminmax %>% 
+      group_by (Site) %>%
+      summarise(mean_sst = mean(sst_avg_annual, na.rm = T),
+                max_sst = max(sst_max_annual, na.rm = T),
+                min_sst = min(sst_min_annual, na.rm = T))
+    
+    #If grouping var doesn't = Site, swap name back
+    average_temperature_site <- average_temperature_site %>%
+      rename(!!sym(grouping_var) := Site)
+    
+    return(average_temperature_site_meanminmax)
+    
+  }
+  
+  #If we want annual values but only for mean
+  if(annual == T & min_max == F){
+    
+    lat_lon_site_variable_full_mean <- lat_lon_site_variable_full %>%
+      group_by(Site, year) %>%
+      summarize(sst_avg_annual = mean(sst_adj, na.rm = T))
+    
+    #If grouping var doesn't = Site, swap name back
+    average_temperature_site <- average_temperature_site %>%
+      rename(!!sym(grouping_var) := Site)
+    
+    return(lat_lon_site_variable_full_mean)
+  }
+  
+  #If we want annual values for mean, max, and min
+  if(annual == T & min_max == T){
+    lat_lon_variable_full_meanminmax <- lat_lon_variable_full %>%
+      group_by(Site, year) %>%
+      summarize(sst_avg_annual = mean(sst_adj, na.rm = T),
+                sst_max_annual = max(sst_adj, na.rm = T),
+                sst_min_annual = min(sst_adj, na.rm = T))
+    
+    #If grouping var doesn't = Site, swap name back
+    average_temperature_site <- average_temperature_site %>%
+      rename(!!sym(grouping_var) := Site)
+    
+    return(lat_lon_variable_full_meanminmax)
+  }
+}
